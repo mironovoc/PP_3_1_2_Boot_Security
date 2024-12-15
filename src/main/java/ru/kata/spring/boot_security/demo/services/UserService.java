@@ -14,6 +14,7 @@ import ru.kata.spring.boot_security.demo.models.User;
 import ru.kata.spring.boot_security.demo.repositories.UserRepository;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,10 +22,12 @@ import java.util.stream.Collectors;
 public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
+    private final RoleService roleService;
 
     @Autowired
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, RoleService roleService) {
         this.userRepository = userRepository;
+        this.roleService = roleService;
     }
 
     public User findByUsername(String username) {
@@ -54,15 +57,23 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public void addUser(User user) {
+    public void addUser(User user, List<Long> roleIds) {
         user.setPassword(new BCryptPasswordEncoder().encode(user.getPassword()));
+        // Назначаем роли пользователю
+        user.setRoles(roleIds.stream().map(roleService::findRoleById).collect(Collectors.toList()));
         userRepository.save(user);
     }
 
     @Transactional
-    public void updateUser(User user) {
+    public void updateUser(User user, List<Long> roleIds) {
         if (user.getPassword() != null && !user.getPassword().isEmpty()) {
             user.setPassword(new BCryptPasswordEncoder().encode(user.getPassword())); // Кодируем пароль, если он изменен
+        }
+        // Назначаем роли пользователю
+        if (roleIds != null && !roleIds.isEmpty()) {
+            user.setRoles(roleIds.stream().map(roleService::findRoleById).collect(Collectors.toList()));
+        } else {
+            user.setRoles(Collections.emptyList()); // Если роли не выбраны, устанавливаем пустой список
         }
         userRepository.save(user);
     }

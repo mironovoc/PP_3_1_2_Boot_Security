@@ -5,19 +5,23 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import ru.kata.spring.boot_security.demo.models.User;
+import ru.kata.spring.boot_security.demo.services.RoleService;
 import ru.kata.spring.boot_security.demo.services.UserService;
 
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.List;
 
 @Controller
 public class MainController {
 
     private final UserService userService;
+    private final RoleService roleService;
 
     @Autowired
-    public MainController(UserService userService) {
+    public MainController(UserService userService, RoleService roleService) {
         this.userService = userService;
+        this.roleService = roleService;
     }
 
     @GetMapping("/")
@@ -46,13 +50,14 @@ public class MainController {
     @GetMapping("/admin/new")
     public String newUserForm(Model model) {
         model.addAttribute("user", new User());
+        model.addAttribute("roles", roleService.getAllRoles()); // Добавляем список ролей в модель
         return "newUser";
     }
 
     // Обработка формы для добавления нового пользователя
     @PostMapping("/admin/new")
-    public String addUser(@ModelAttribute("user") User user) {
-        userService.addUser(user);
+    public String addUser(@ModelAttribute("user") User user, @RequestParam List<Long> roleIds) {
+        userService.addUser(user, roleIds);
         return "redirect:/admin";
     }
 
@@ -64,13 +69,17 @@ public class MainController {
             return "redirect:/admin";
         }
         model.addAttribute("user", user);
+        model.addAttribute("roles", roleService.getAllRoles()); // Добавляем список ролей в модель
         return "editUser";
     }
 
     // Обработка формы для редактирования пользователя
     @PostMapping("/admin/edit")
-    public String updateUser(@ModelAttribute("user") User user) {
-        userService.updateUser(user);
+    public String updateUser(@ModelAttribute("user") User user, @RequestParam(required = false) List<Long> roleIds) {
+        if (roleIds == null) {
+            roleIds = new ArrayList<>(); // Если роли не выбраны, используем пустой список
+        }
+        userService.updateUser(user, roleIds);
         return "redirect:/admin";
     }
 
