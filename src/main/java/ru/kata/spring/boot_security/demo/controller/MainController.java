@@ -46,7 +46,6 @@ public class MainController {
         return "adminPage";
     }
 
-    // Отображение формы для добавления нового пользователя
     @GetMapping("/admin/new")
     public String newUserForm(Model model) {
         model.addAttribute("user", new User());
@@ -54,14 +53,12 @@ public class MainController {
         return "newUser";
     }
 
-    // Обработка формы для добавления нового пользователя
     @PostMapping("/admin/new")
     public String addUser(@ModelAttribute("user") User user, @RequestParam List<Long> roleIds) {
         userService.addUser(user, roleIds);
         return "redirect:/admin";
     }
 
-    // Отображение формы для редактирования пользователя
     @GetMapping("/admin/edit/{id}")
     public String editUserForm(@PathVariable("id") Long id, Model model) {
         User user = userService.findUserById(id);
@@ -73,7 +70,6 @@ public class MainController {
         return "editUser";
     }
 
-    // Обработка формы для редактирования пользователя
     @PostMapping("/admin/edit")
     public String updateUser(@ModelAttribute("user") User user, @RequestParam(required = false) List<Long> roleIds) {
         if (roleIds == null) {
@@ -83,7 +79,6 @@ public class MainController {
         return "redirect:/admin";
     }
 
-    // Удаление пользователя
     @GetMapping("/admin/delete/{id}")
     public String deleteUser(@PathVariable("id") Long id) {
         User user = userService.findUserById(id);

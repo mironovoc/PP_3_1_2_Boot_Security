@@ -13,6 +13,7 @@ import ru.kata.spring.boot_security.demo.models.Role;
 import ru.kata.spring.boot_security.demo.models.User;
 import ru.kata.spring.boot_security.demo.repositories.UserRepository;
 
+import javax.persistence.EntityNotFoundException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -49,7 +50,6 @@ public class UserService implements UserDetailsService {
         return roles.stream().map(r -> new SimpleGrantedAuthority(r.getName())).collect(Collectors.toList());
     }
 
-    // Методы для работы с пользователями через JpaRepository
 
     @Transactional(readOnly = true)
     public List<User> allUsers() {
@@ -59,22 +59,25 @@ public class UserService implements UserDetailsService {
     @Transactional
     public void addUser(User user, List<Long> roleIds) {
         user.setPassword(new BCryptPasswordEncoder().encode(user.getPassword()));
-        // Назначаем роли пользователю
         user.setRoles(roleIds.stream().map(roleService::findRoleById).collect(Collectors.toList()));
         userRepository.save(user);
     }
 
     @Transactional
     public void updateUser(User user, List<Long> roleIds) {
-        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
-            user.setPassword(new BCryptPasswordEncoder().encode(user.getPassword())); // Кодируем пароль, если он изменен
-        }
-        // Назначаем роли пользователю
+        User existingUser = userRepository.findById(user.getId())
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        user.setPassword(new BCryptPasswordEncoder().encode(user.getPassword()));
+        user.setUsername(user.getUsername());
+        user.setEmail(user.getEmail());
+
+        // Обновляем роли
         if (roleIds != null && !roleIds.isEmpty()) {
             user.setRoles(roleIds.stream().map(roleService::findRoleById).collect(Collectors.toList()));
         } else {
-            user.setRoles(Collections.emptyList()); // Если роли не выбраны, устанавливаем пустой список
+            user.setRoles(Collections.emptyList());
         }
+
         userRepository.save(user);
     }
 
